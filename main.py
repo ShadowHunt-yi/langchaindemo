@@ -7,7 +7,8 @@ Python 知识点:
   - 直接运行 python main.py → __name__ == "__main__" → 执行
   - 被别的文件 import → 不执行
 """
-from agent import run
+# from agent import run
+from agentwithMemory import run
 
 
 def main():
