@@ -1,4 +1,4 @@
-"""
+﻿"""
 Agent 循环 — 类比 JS 的 controller / middleware
 
 核心流程（ReAct 模式）:
@@ -34,16 +34,16 @@ def _parse_action(text: str):
     """
     # 先尝试匹配多行 Finish：Action: Finish[...内容可能跨行...]
     # re.DOTALL 让 . 匹配换行符（类比 JS 的 /s 标志）
+        # Prefer tool calls when both tool and Finish appear in the same reply.
+    tool_match = re.search(r"Action:\s*(\w+\([^)]*\))", text, re.DOTALL)
+    if tool_match:
+        return "tool", tool_match.group(1).strip()
+
     finish_match = re.search(r"Action:\s*Finish\[(.+)\]", text, re.DOTALL)
     if finish_match:
         return "finish", finish_match.group(1).strip()
 
-    # 再匹配单行工具调用：Action: get_weather(city="成都")
-    match = re.search(r"Action:\s*(.+)", text)
-    if not match:
-        return None, None
-
-    return "tool", match.group(1).strip()
+    return None, None
 
 
 def _execute_tool(action_str: str) -> str:
