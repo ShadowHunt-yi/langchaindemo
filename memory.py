@@ -142,16 +142,21 @@ class AgentMemory:
     
     def search_facts(self, query: str, top_k: int = 5) -> List[MemoryEntry]:
         """
-        检索相关事实（简单关键词匹配，生产环境可用向量检索）
+        检索相关事实
+        用字符级 n-gram 匹配，解决中文无空格分词的问题
+        （生产环境建议换向量检索，如 chromadb）
         """
-        query_words = set(query.lower().split())
+        query_lower = query.lower()
+        # 生成查询的 2-gram 集合，例如 "成都天气" → {"成都", "都天", "天气"}
+        query_grams = {query_lower[i:i+2] for i in range(len(query_lower) - 1)}
         scored = []
-        
+
         for fact in self.facts:
-            fact_words = set(fact.content.lower().split())
-            overlap = len(query_words & fact_words)
-            score = overlap * fact.importance  # 重叠词数 * 重要性
-            
+            fact_lower = fact.content.lower()
+            fact_grams = {fact_lower[i:i+2] for i in range(len(fact_lower) - 1)}
+            overlap = len(query_grams & fact_grams)
+            score = overlap * fact.importance
+
             if score > 0:
                 scored.append((score, fact))
         
@@ -215,8 +220,9 @@ class AgentMemory:
         profile = self.get_profile()
         relevant_profile = {}
         for key, value in profile.items():
-            # 简单判断相关性：查询词是否在 key 或 value 中
-            if any(word in (key + str(value)).lower() for word in query.lower().split()):
+            combined = (key + str(value)).lower()
+            # 用子串匹配代替空格分词，适配中文
+            if any(char in combined for char in query if char.strip()):
                 relevant_profile[key] = value
         
         if relevant_profile:
